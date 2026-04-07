@@ -105,7 +105,10 @@ spec:
             - name: OPAMP_ENDPOINT
               value: {{ .Values.opamp.endpoint | quote }}
             - name: OPAMP_SECRET_KEY
-              value: {{ .Values.opamp.secretKey | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: bdot-gateway-secret
+                  key: OPAMP_SECRET_KEY
             - name: OPAMP_AGENT_NAME
               valueFrom:
                 fieldRef:
