@@ -4,9 +4,9 @@ metadata:
   name: bdot-gateway
   namespace: argocd
 spec:
-  project: default
+  project: observability-platform
   source:
-    repoURL: https://github.com/snakka-ops/obs-platform.git
+    repoURL: https://github.com/<YOUR_GIT_REPO_URL>.git
     targetRevision: main
     path: charts/bdot-gateway
   destination:
