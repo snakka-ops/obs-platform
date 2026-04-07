@@ -1,0 +1,14 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.deployment.name }}-pdb
+  namespace: {{ .Values.namespace }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: gateway
+      app.kubernetes.io/name: {{ .Values.deployment.name }}
+{{- end }}
+

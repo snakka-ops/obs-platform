@@ -17,25 +17,6 @@ opamp:
   secretKey: "<BINDPLANE_OPAMP_SECRET>"
   labels: "container-platform=kubernetes-gateway,fleet=bdot-gateway"
 
-resources:
-  main:
-    requests:
-      cpu: "250m"
-      memory: "500Mi"
-    limits:
-      memory: "500Mi"
-  init:
-    requests:
-      cpu: "100m"
-      memory: "200Mi"
-    limits:
-      memory: "200Mi"
-
-securityContext:
-  runAsUser: 1000000000
-  runAsGroup: 1000000000
-  fsGroup: 1000000000
-
 service:
   enabled: false
   name: bdot-gateway

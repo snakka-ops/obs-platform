@@ -1,0 +1,18 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: {{ .Values.deployment.name }}
+  ports:
+    - name: prometheus
+      port: {{ .Values.service.port }}
+      targetPort: 8888
+      protocol: TCP
+{{- end }}
+
