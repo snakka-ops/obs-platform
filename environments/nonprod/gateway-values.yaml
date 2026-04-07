@@ -14,7 +14,7 @@ image:
 
 opamp:
   endpoint: ws://bindplane.bindplane:3001/v1/opamp
-  secretKey: "<BINDPLANE_OPAMP_SECRET>"
+  secretKey: "01KMTG2ARNJTETH6MSQ4ERRCA7"
   labels: "container-platform=kubernetes-gateway,fleet=bdot-gateway"
 
 service:
