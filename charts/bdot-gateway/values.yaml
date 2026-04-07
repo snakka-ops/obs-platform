@@ -1,0 +1,40 @@
+namespace: bdot-gateway
+
+serviceAccount:
+  name: gateway-collectors
+
+deployment:
+  name: gateway-collectors
+  replicas: 2
+
+image:
+  repository: ghcr.io/observiq/bindplane-agent
+  tag: "1.94.2"
+  pullPolicy: IfNotPresent
+
+opamp:
+  endpoint: ws://bindplane.bindplane:3001/v1/opamp
+  secretKey: "01KMTG2ARNJTETH6MSQ4ERRCA7"
+  labels: "container-platform=kubernetes-gateway,fleet=bdot-gateway"
+
+resources:
+  main:
+    requests:
+      cpu: "250m"
+      memory: "500Mi"
+    limits:
+      memory: "500Mi"
+  init:
+    requests:
+      cpu: "100m"
+      memory: "200Mi"
+    limits:
+      memory: "200Mi"
+
+securityContext:
+  runAsUser: 1000000000
+  runAsGroup: 1000000000
+  fsGroup: 1000000000
+
+service:
+  enabled: false

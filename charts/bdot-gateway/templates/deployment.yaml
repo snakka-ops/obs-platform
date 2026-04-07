@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/name: {{ .Values.deployment.name }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: gateway
+      app.kubernetes.io/name: {{ .Values.deployment.name }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/job-name: {{ .Values.deployment.name }}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8888"
+        prometheus.io/scheme: http
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/component: gateway
+        app.kubernetes.io/name: {{ .Values.deployment.name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      terminationGracePeriodSeconds: 500
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        runAsNonRoot: true
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ .Values.deployment.name }}
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - gateway
+      initContainers:
+        - name: setup-volumes
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo '
+              receivers:
+                nop:
+              processors:
+                batch:
+              exporters:
+                nop:
+              service:
+                pipelines:
+                  metrics:
+                    receivers: [nop]
+                    processors: [batch]
+                    exporters: [nop]
+                telemetry:
+                  metrics:
+                    level: none
+              ' > /etc/otel/storage/config.yaml
+              echo '
+              output: stdout
+              level: info
+              ' > /etc/otel/storage/logging.yaml
+          resources:
+            requests:
+              cpu: {{ .Values.resources.init.requests.cpu | quote }}
+              memory: {{ .Values.resources.init.requests.memory | quote }}
+            limits:
+              memory: {{ .Values.resources.init.limits.memory | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsNonRoot: true
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: gateway-collectors-storage
+              mountPath: /etc/otel/storage
+      containers:
+        - name: opentelemetry-container
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: OPAMP_ENDPOINT
+              value: {{ .Values.opamp.endpoint | quote }}
+            - name: OPAMP_SECRET_KEY
+              value: {{ .Values.opamp.secretKey | quote }}
+            - name: OPAMP_AGENT_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: OPAMP_LABELS
+              value: {{ .Values.opamp.labels | quote }}
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: CONFIG_YAML_PATH
+              value: /etc/otel/storage/config.yaml
+            - name: MANAGER_YAML_PATH
+              value: /etc/otel/config/manager.yaml
+            - name: LOGGING_YAML_PATH
+              value: /etc/otel/storage/logging.yaml
+          ports:
+            - name: prometheus
+              containerPort: 8888
+              protocol: TCP
+          resources:
+            requests:
+              cpu: {{ .Values.resources.main.requests.cpu | quote }}
+              memory: {{ .Values.resources.main.requests.memory | quote }}
+            limits:
+              memory: {{ .Values.resources.main.limits.memory | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsNonRoot: true
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: gateway-collectors-storage
+              mountPath: /etc/otel/storage
+            - name: config
+              mountPath: /etc/otel/config
+      volumes:
+        - name: config
+          emptyDir: {}
+        - name: gateway-collectors-storage
+          emptyDir: {}
